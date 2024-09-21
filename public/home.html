@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>396 Project 2 - Blog</title>
+    <link rel="stylesheet" href="styling/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to My Blog</h1>
+    </header>
+    <section id="content">
+        <form action="/logout" method="POST" style="display:inline;">
+            <button type="submit">Logout</button>
+        </form>
+        <button id="createPostBtn">Create Post</button>
+        <div id="posts"></div>
+    </section>
+    <script>
+        // Fetch and display all posts
+        function loadPosts() {
+            fetch('/posts')
+                .then(response => response.json())
+                .then(posts => {
+                    const postsDiv = document.getElementById('posts');
+                    postsDiv.innerHTML = ''; // Clear previous posts
+                    posts.forEach(post => {
+                        const postDiv = document.createElement('div');
+                        postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>`;
+                        postsDiv.appendChild(postDiv);
+                    });
+                });
+        }
+
+        document.getElementById('createPostBtn').onclick = function() {
+            window.location.href = '/create-post';
+        };
+
+        // Load posts on page load
+        loadPosts();
+    </script>
+</body>
+</html>
+
+
+<!--<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>396 Project 2 - Blog</title>
+    <link rel="stylesheet" href="styling/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to My Blog</h1>
+    </header>
+    <section id="content">
+        <-- Logout button 
+        <form action="/logout" method="POST" style="display:inline;">
+            <button type="submit">Logout</button>
+        </form>
+    </section>
+    <script src="app.js"></script>
+</body>
+</html> -->
