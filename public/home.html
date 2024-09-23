@@ -17,6 +17,7 @@
         <button id="createPostBtn">Create Post</button>
         <div id="posts"></div>
     </section>
+    <script src="app.js"></script> 
     <script>
         // Fetch and display all posts
         function loadPosts() {
@@ -27,8 +28,37 @@
                     postsDiv.innerHTML = ''; // Clear previous posts
                     posts.forEach(post => {
                         const postDiv = document.createElement('div');
-                        postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>`;
-                        postsDiv.appendChild(postDiv);
+
+                        // Fetch associated tags for the post
+                        fetch(`/posts/${post.id}/tags`)
+                            .then(response => response.json())
+                            .then(tags => {
+                                const tagList = tags.map(tag => tag.name).join(', ');
+                                const localDate = new Date(post.created_at + 'Z').toLocaleString();
+
+                                // Create buttons for editing and deleting
+                                const editButton = document.createElement('button');
+                                editButton.textContent = 'Edit';
+                                editButton.onclick = () => {
+                                    // Redirect to the edit page
+                                    window.location.href = `/edit-post/${post.id}`;
+                                };
+
+                                const deleteButton = document.createElement('button');
+                                deleteButton.textContent = 'Delete';
+                                deleteButton.onclick = () => deletePost(post.id);
+
+                                // Display post along with its tags and buttons
+                                postDiv.innerHTML = `
+                                    <h2>${post.title}</h2>
+                                    <p>${post.content}</p>
+                                    <p>Posted by <strong>${post.username}</strong> on ${localDate}</p>
+                                    <p>Tags: ${tagList || 'None'}</p>
+                                `;
+                                postDiv.appendChild(editButton);
+                                postDiv.appendChild(deleteButton);
+                                postsDiv.appendChild(postDiv);
+                            });
                     });
                 });
         }
@@ -42,26 +72,3 @@
     </script>
 </body>
 </html>
-
-
-<!--<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>396 Project 2 - Blog</title>
-    <link rel="stylesheet" href="styling/styles.css">
-</head>
-<body>
-    <header>
-        <h1>Welcome to My Blog</h1>
-    </header>
-    <section id="content">
-        <-- Logout button 
-        <form action="/logout" method="POST" style="display:inline;">
-            <button type="submit">Logout</button>
-        </form>
-    </section>
-    <script src="app.js"></script>
-</body>
-</html> -->

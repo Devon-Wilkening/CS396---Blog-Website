@@ -4,13 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Post</title>
+    <link rel="stylesheet" href="styling/styles.css">
 </head>
 <body>
     <h1>Create a New Post</h1>
-    <form action="/posts" method="POST">
-        <input type="text" name="title" placeholder="Post Title" required>
-        <textarea name="content" placeholder="Post Content" required></textarea>
-        <button type="submit">Post</button>
+    <form id="postForm">
+        <label for="postTitle">Title:</label>
+        <input type="text" id="postTitle" name="title" required>
+
+        <label for="postContent">Content:</label>
+        <textarea id="postContent" name="content" required></textarea>
+
+        <label for="postTag">Tag:</label>
+        <input type="text" id="postTag" name="tag" placeholder="Enter a tag (e.g., Happy)" />
+
+        <button type="submit">Create Post</button>
     </form>
+
+    <script src="app.js"></script>
 </body>
 </html>

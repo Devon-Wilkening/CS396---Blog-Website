@@ -109,25 +109,133 @@ app.get('/create-post', (req, res) => {
 
 // Create a new post
 app.post('/posts', (req, res) => {
-    const { title, content } = req.body;
+    const { title, content, tag } = req.body;
     const userId = req.session.userId;
 
     db.run('INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)', 
-    [title, content, userId], function(err) {
+    [title, content, userId], function (err) {
         if (err) {
             return res.status(500).send('Error creating post.');
         }
-        res.redirect('/home'); // Redirect back to home after posting
+        
+        const postId = this.lastID;
+
+        if (tag) {
+            // Insert tag into 'tags' table if it doesn't already exist
+            db.run('INSERT OR IGNORE INTO tags (name) VALUES (?)', [tag], function(err) {
+                if (err) {
+                    return res.status(500).send('Error creating tag.');
+                }
+
+                // Get the tag ID
+                db.get('SELECT id FROM tags WHERE name = ?', [tag], (err, row) => {
+                    if (err || !row) {
+                        return res.status(500).send('Error associating tag.');
+                    }
+
+                    const tagId = row.id;
+
+                    // Insert into 'post_tags' to associate tag with the post
+                    db.run('INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)', [postId, tagId], function(err) {
+                        if (err) {
+                            return res.status(500).send('Error associating tag with post.');
+                        }
+
+                        res.redirect('/home'); // Redirect back to home after posting
+                    });
+                });
+            });
+        } else {
+            res.redirect('/home');
+        }
     });
 });
 
-// Read all posts
+// Read all posts with the username and created_at
 app.get('/posts', (req, res) => {
-    db.all('SELECT * FROM posts', [], (err, posts) => {
+    const query = `
+        SELECT posts.id, posts.title, posts.content, posts.created_at, users.username
+        FROM posts
+        INNER JOIN users ON posts.user_id = users.id
+        ORDER BY posts.created_at DESC;
+    `;
+
+    db.all(query, [], (err, posts) => {
         if (err) {
             return res.status(500).send('Error fetching posts.');
         }
-        res.json(posts); // Return posts as JSON
+        res.json(posts); // Return posts with username and created_at
+    });
+});
+
+app.get('/posts/:postId/tags', (req, res) => {
+    const postId = req.params.postId;
+    db.all(`
+        SELECT tags.name 
+        FROM tags 
+        JOIN post_tags ON tags.id = post_tags.tag_id
+        WHERE post_tags.post_id = ?`, 
+    [postId], (err, rows) => {
+        if (err) {
+            return res.status(500).send('Error fetching tags.');
+        }
+        res.json(rows);
+    });
+});
+
+// Route to serve the edit post page
+app.get('/edit-post/:postId', (req, res) => {
+    const postId = req.params.postId;
+    const userId = req.session.userId;
+
+    db.get('SELECT * FROM posts WHERE id = ? AND user_id = ?', [postId, userId], (err, post) => {
+        if (err || !post) {
+            return res.status(404).send('Post not found or you are not authorized to edit this post.');
+        }
+        res.sendFile(__dirname + '/public/editPost.html'); // Serve editPost.html
+    });
+});
+
+// Route to handle editing a post
+app.post('/posts/:postId/edit', (req, res) => {
+    const postId = req.params.postId;
+    const { title, content } = req.body;
+    const userId = req.session.userId;
+
+    console.log(`Editing post with ID: ${postId}`); // Debug log
+    console.log(`New title: ${title}, New content: ${content}`); // Debug log
+
+    db.run('UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?', 
+    [title, content, postId, userId], function(err) {
+        if (err) {
+            console.error('Error updating post:', err); // Debug log
+            return res.status(500).send('Error updating post.');
+        }
+        res.redirect('/home'); // Redirect back to home after editing
+    });
+});
+
+// Route to fetch a single post's data
+app.get('/posts/:postId', (req, res) => {
+    const postId = req.params.postId;
+
+    db.get('SELECT * FROM posts WHERE id = ?', [postId], (err, post) => {
+        if (err) {
+            return res.status(500).send('Error fetching post.');
+        }
+        res.json(post);
+    });
+});
+
+app.delete('/posts/:postId', (req, res) => {
+    const postId = req.params.postId;
+    const userId = req.session.userId;
+
+    db.run('DELETE FROM posts WHERE id = ? AND user_id = ?', [postId, userId], function(err) {
+        if (err) {
+            return res.status(500).send('Error deleting post.');
+        }
+        res.sendStatus(200); // Send success response
     });
 });
 
