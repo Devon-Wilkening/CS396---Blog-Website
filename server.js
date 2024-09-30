@@ -239,6 +239,30 @@ app.delete('/posts/:postId', (req, res) => {
     });
 });
 
+app.get('/posts/:postId/comments', (req, res) => {
+    const postId = req.params.postId;
+    db.all('SELECT * FROM comments WHERE post_id = ?', [postId], (err, comments) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to fetch comments' });
+        }
+        res.json(comments);
+    });
+});
+
+app.post('/posts/:postId/comments', (req, res) => {
+    const postId = req.params.postId;
+    const { comment } = req.body;
+    const userId = 1; // Replace with the actual user ID of the logged-in user
+
+    db.run('INSERT INTO comments (comment, post_id, user_id) VALUES (?, ?, ?)', [comment, postId, userId], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to add comment' });
+        }
+        res.status(201).json({ id: this.lastID }); // Return the ID of the new comment
+    });
+});
+
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
