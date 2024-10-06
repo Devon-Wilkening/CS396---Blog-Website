@@ -20,7 +20,6 @@
     <script src="app.js"></script>
     <script>
         // Fetch and display all posts
-        // Fetch and display all posts
         function loadPosts() {
             fetch('/posts')
                 .then(response => response.json())
@@ -29,11 +28,6 @@
                     postsDiv.innerHTML = ''; // Clear previous posts
                     posts.forEach(post => {
                         const postDiv = document.createElement('div');
-
-                        // Create a local date string for the created_at field
-                        const localDate = new Date(post.created_at).toLocaleString(undefined, {
-                            timeZoneName: 'short'
-                        });
 
                         // Fetch associated tags for the post
                         fetch(`/posts/${post.id}/tags`)
@@ -70,7 +64,7 @@
                                 postDiv.innerHTML = `
                                     <h2>${post.title}</h2>
                                     <p>${post.content}</p>
-                                    <p>Posted by <strong>${post.username}</strong> on ${localDate}</p>
+                                    <p>Posted by <strong>${post.username}</strong> on ${new Date(post.created_at + 'Z').toLocaleString()}</p>
                                     <p>Tags: ${tagList || 'None'}</p>
                                 `;
 
@@ -102,7 +96,7 @@
                     comments.forEach(comment => {
                         const commentDiv = document.createElement('div');
                         commentDiv.innerHTML = `
-                            <p>${comment.comment} - <em>${new Date(comment.created_at + 'Z').toLocaleString()}</em></p>
+                            <p><strong>${comment.username}</strong> commented: "${comment.comment}" - <em>${new Date(comment.created_at + 'Z').toLocaleString()}</em></p>
                         `;
                         commentsDiv.appendChild(commentDiv);
                     });

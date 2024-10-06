@@ -241,8 +241,16 @@ app.delete('/posts/:postId', (req, res) => {
 
 app.get('/posts/:postId/comments', (req, res) => {
     const postId = req.params.postId;
-    db.all('SELECT * FROM comments WHERE post_id = ?', [postId], (err, comments) => {
+    
+    db.all(`
+        SELECT comments.*, users.username 
+        FROM comments 
+        JOIN users ON comments.user_id = users.id
+        WHERE post_id = ? 
+        ORDER BY comments.created_at DESC
+    `, [postId], (err, comments) => {
         if (err) {
+            console.error('Error fetching comments:', err);
             return res.status(500).json({ error: 'Failed to fetch comments' });
         }
         res.json(comments);
@@ -251,17 +259,24 @@ app.get('/posts/:postId/comments', (req, res) => {
 
 app.post('/posts/:postId/comments', (req, res) => {
     const postId = req.params.postId;
+    const userId = req.session.userId; // Assuming user session contains the logged-in user ID
     const { comment } = req.body;
-    const userId = 1; // Replace with the actual user ID of the logged-in user
 
-    db.run('INSERT INTO comments (comment, post_id, user_id) VALUES (?, ?, ?)', [comment, postId, userId], function(err) {
+    if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    db.run(`
+        INSERT INTO comments (comment, post_id, user_id) 
+        VALUES (?, ?, ?)
+    `, [comment, postId, userId], function(err) {
         if (err) {
-            return res.status(500).json({ error: 'Failed to add comment' });
+            console.error('Error creating comment:', err);
+            return res.status(500).json({ error: 'Failed to create comment' });
         }
-        res.status(201).json({ id: this.lastID }); // Return the ID of the new comment
+        res.status(201).json({ message: 'Comment added successfully' });
     });
 });
-
 
 // Start the server
 app.listen(PORT, () => {
