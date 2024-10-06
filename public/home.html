@@ -15,6 +15,13 @@
             <button type="submit">Logout</button>
         </form>
         <button id="createPostBtn">Create Post</button>
+
+        <!-- Search Bar -->
+        <input type="text" id="tagSearchInput" placeholder="Search by tag...">
+        <button id="tagSearchButton">Search</button>
+        <!-- Return Home -->
+        <button id="returnHomeButton" style="display:none;">Return Home</button>
+
         <div id="posts"></div>
     </section>
     <script src="app.js"></script>
@@ -96,16 +103,28 @@
                     comments.forEach(comment => {
                         const commentDiv = document.createElement('div');
                         commentDiv.innerHTML = `
-                            <p><strong>${comment.username}</strong> commented: "${comment.comment}" - <em>${new Date(comment.created_at + 'Z').toLocaleString()}</em></p>
+                            <p><strong>${comment.username}</strong> commented: 
+                            "<span id="comment-text-${comment.id}">${comment.comment}</span>" - 
+                            <em>${new Date(comment.created_at + 'Z').toLocaleString()}</em></p>
                         `;
-                        
-                        // Create a delete button for the comment
-                        const deleteCommentButton = document.createElement('button');
-                        deleteCommentButton.textContent = 'Delete Comment';
-                        deleteCommentButton.onclick = () => deleteComment(comment.id, postId); // Pass comment ID and post ID
 
-                        // Append the delete button to the comment div
-                        commentDiv.appendChild(deleteCommentButton);
+                        // Create Edit button
+                        const editButton = document.createElement('button');
+                        editButton.textContent = 'Edit Comment';
+                        editButton.onclick = () => {
+                            const newComment = prompt('Edit your comment:', comment.comment);
+                            if (newComment !== null && newComment.trim() !== '') {
+                                editComment(comment.id, postId, newComment);
+                            }
+                        };
+
+                        // Create Delete button
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete Comment';
+                        deleteButton.onclick = () => deleteComment(comment.id, postId);
+
+                        commentDiv.appendChild(editButton);
+                        commentDiv.appendChild(deleteButton);
                         commentsDiv.appendChild(commentDiv);
                     });
                 })
@@ -143,6 +162,28 @@
             });
         }
 
+        function editComment(commentId, postId, newComment) {
+            fetch(`/posts/${postId}/comments/${commentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ comment: newComment })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to edit comment');
+                    });
+                }
+                loadComments(postId); // Reload comments after editing
+            })
+            .catch(error => {
+                alert(error.message); // Display the error message to the user
+                console.error('Error editing comment:', error);
+            });
+        }
+
         function deleteComment(commentId, postId) {
             fetch(`/posts/${postId}/comments/${commentId}`, {
                 method: 'DELETE'
@@ -161,6 +202,48 @@
                 console.error('Error deleting comment:', error);
             });
         }
+
+
+        // Function to search posts by tag
+        function searchByTag(tag) {
+            fetch(`/posts/tag/${tag}`)
+                .then(response => response.json())
+                .then(posts => {
+                    const postsDiv = document.getElementById('posts');
+                    postsDiv.innerHTML = ''; // Clear previous posts
+                    if (posts.length === 0) {
+                        postsDiv.innerHTML = '<p>No posts found for this tag.</p>';
+                    } else {
+                        posts.forEach(post => {
+                            const postDiv = document.createElement('div');
+                            postDiv.innerHTML = `
+                                <h2>${post.title}</h2>
+                                <p>${post.content}</p>
+                                <p>Posted by <strong>${post.username}</strong> on ${new Date(post.created_at + 'Z').toLocaleString()}</p>
+                            `;
+                            postsDiv.appendChild(postDiv);
+                        });
+                    }
+                    // Show the return home button
+                    document.getElementById('returnHomeButton').style.display = 'inline-block';
+                })
+                .catch(error => {
+                    console.error('Error fetching posts by tag:', error);
+                });
+        }
+        
+        document.getElementById('returnHomeButton').onclick = function() {
+            document.getElementById('tagSearchInput').value = ''; // Clear the search input
+            document.getElementById('returnHomeButton').style.display = 'none'; // Hide the return button
+            loadPosts(); // Reload all posts
+        };
+
+        document.getElementById('tagSearchButton').onclick = function() {
+            const tag = document.getElementById('tagSearchInput').value.trim();
+            if (tag !== '') {
+                searchByTag(tag);
+            }
+        };
 
         document.getElementById('createPostBtn').onclick = function() {
             window.location.href = '/create-post';

@@ -278,6 +278,39 @@ app.post('/posts/:postId/comments', (req, res) => {
     });
 });
 
+// PUT (edit) comment
+app.put('/posts/:postId/comments/:commentId', (req, res) => {
+    const commentId = req.params.commentId;
+    const userId = req.session.userId; // Get the logged-in user's ID from the session
+    const { comment } = req.body; // Get the new comment text from the request body
+
+    // First, fetch the comment to check the user_id
+    db.get(`SELECT user_id FROM comments WHERE id = ?`, [commentId], (err, existingComment) => {
+        if (err) {
+            console.error('Error fetching comment:', err);
+            return res.status(500).json({ error: 'Failed to fetch comment' });
+        }
+
+        if (!existingComment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+        // Check if the logged-in user is the owner of the comment
+        if (existingComment.user_id !== userId) {
+            return res.status(403).json({ error: 'Unauthorized: You can only edit your own comments' });
+        }
+
+        // Proceed to update the comment if the user is authorized
+        db.run(`UPDATE comments SET comment = ? WHERE id = ?`, [comment, commentId], function(err) {
+            if (err) {
+                console.error('Error updating comment:', err);
+                return res.status(500).json({ error: 'Failed to update comment' });
+            }
+            res.status(200).json({ message: 'Comment updated successfully' });
+        });
+    });
+});
+
 // DELETE comment
 app.delete('/posts/:postId/comments/:commentId', (req, res) => {
     const commentId = req.params.commentId;
@@ -307,6 +340,27 @@ app.delete('/posts/:postId/comments/:commentId', (req, res) => {
             }
             res.status(200).json({ message: 'Comment deleted successfully' });
         });
+    });
+});
+
+// GET posts by tag
+app.get('/posts/tag/:tag', (req, res) => {
+    const tag = req.params.tag;
+
+    db.all(`
+        SELECT posts.*, users.username 
+        FROM posts 
+        JOIN post_tags ON posts.id = post_tags.post_id 
+        JOIN tags ON post_tags.tag_id = tags.id 
+        JOIN users ON posts.user_id = users.id 
+        WHERE tags.name = ? 
+        ORDER BY posts.created_at DESC
+    `, [tag], (err, posts) => {
+        if (err) {
+            console.error('Error fetching posts by tag:', err);
+            return res.status(500).json({ error: 'Failed to fetch posts' });
+        }
+        res.json(posts);
     });
 });
 
