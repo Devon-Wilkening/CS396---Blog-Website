@@ -20,14 +20,10 @@
     <script src="app.js"></script>
     <script>
         // Fetch and display all posts
+        // Fetch and display all posts
         function loadPosts() {
             fetch('/posts')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(posts => {
                     const postsDiv = document.getElementById('posts');
                     postsDiv.innerHTML = ''; // Clear previous posts
@@ -35,51 +31,60 @@
                         const postDiv = document.createElement('div');
 
                         // Create a local date string for the created_at field
-                        const localDate = new Date(post.created_at + 'Z').toLocaleString(undefined, {
+                        const localDate = new Date(post.created_at).toLocaleString(undefined, {
                             timeZoneName: 'short'
                         });
 
-                        // Create buttons for editing and deleting
-                        const editButton = document.createElement('button');
-                        editButton.textContent = 'Edit';
-                        editButton.onclick = () => {
-                            // Redirect to the edit page
-                            window.location.href = `/edit-post/${post.id}`;
-                        };
+                        // Fetch associated tags for the post
+                        fetch(`/posts/${post.id}/tags`)
+                            .then(response => response.json())
+                            .then(tags => {
+                                const tagList = tags.map(tag => tag.name).join(', ');
 
-                        const deleteButton = document.createElement('button');
-                        deleteButton.textContent = 'Delete';
-                        deleteButton.onclick = () => deletePost(post.id);
+                                // Create buttons for editing and deleting
+                                const editButton = document.createElement('button');
+                                editButton.textContent = 'Edit';
+                                editButton.onclick = () => {
+                                    // Redirect to the edit page
+                                    window.location.href = `/edit-post/${post.id}`;
+                                };
 
-                        // Create comment section
-                        const commentInput = document.createElement('input');
-                        commentInput.placeholder = 'Add a comment...';
-                        commentInput.type = 'text';
-                        commentInput.id = `comment-input-${post.id}`;
+                                const deleteButton = document.createElement('button');
+                                deleteButton.textContent = 'Delete';
+                                deleteButton.onclick = () => deletePost(post.id);
 
-                        const commentButton = document.createElement('button');
-                        commentButton.textContent = 'Comment';
-                        commentButton.onclick = () => addComment(post.id);
+                                // Create comment section
+                                const commentInput = document.createElement('input');
+                                commentInput.placeholder = 'Add a comment...';
+                                commentInput.type = 'text';
+                                commentInput.id = `comment-input-${post.id}`;
 
-                        const commentsDiv = document.createElement('div');
-                        commentsDiv.id = `comments-${post.id}`;
+                                const commentButton = document.createElement('button');
+                                commentButton.textContent = 'Comment';
+                                commentButton.onclick = () => addComment(post.id);
 
-                        postDiv.innerHTML = `
-                            <h2>${post.title}</h2>
-                            <p>${post.content}</p>
-                            <p>Posted by <strong>${post.username}</strong> on ${localDate}</p>
-                        `;
+                                const commentsDiv = document.createElement('div');
+                                commentsDiv.id = `comments-${post.id}`;
 
-                        // Append buttons and comment input to the post
-                        postDiv.appendChild(editButton);
-                        postDiv.appendChild(deleteButton);
-                        postDiv.appendChild(commentInput);
-                        postDiv.appendChild(commentButton);
-                        postDiv.appendChild(commentsDiv);
-                        postsDiv.appendChild(postDiv);
+                                // Display post content along with its tags
+                                postDiv.innerHTML = `
+                                    <h2>${post.title}</h2>
+                                    <p>${post.content}</p>
+                                    <p>Posted by <strong>${post.username}</strong> on ${localDate}</p>
+                                    <p>Tags: ${tagList || 'None'}</p>
+                                `;
 
-                        // Load existing comments for this post
-                        loadComments(post.id);
+                                // Append buttons and comment input to the post
+                                postDiv.appendChild(editButton);
+                                postDiv.appendChild(deleteButton);
+                                postDiv.appendChild(commentInput);
+                                postDiv.appendChild(commentButton);
+                                postDiv.appendChild(commentsDiv);
+                                postsDiv.appendChild(postDiv);
+
+                                // Load existing comments for this post
+                                loadComments(post.id);
+                            });
                     });
                 })
                 .catch(error => {
