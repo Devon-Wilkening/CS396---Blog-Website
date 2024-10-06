@@ -278,6 +278,38 @@ app.post('/posts/:postId/comments', (req, res) => {
     });
 });
 
+// DELETE comment
+app.delete('/posts/:postId/comments/:commentId', (req, res) => {
+    const commentId = req.params.commentId;
+    const userId = req.session.userId; // Get the logged-in user's ID from the session
+
+    // First, fetch the comment to check the user_id
+    db.get(`SELECT user_id FROM comments WHERE id = ?`, [commentId], (err, comment) => {
+        if (err) {
+            console.error('Error fetching comment:', err);
+            return res.status(500).json({ error: 'Failed to fetch comment' });
+        }
+
+        if (!comment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+        // Check if the logged-in user is the owner of the comment
+        if (comment.user_id !== userId) {
+            return res.status(403).json({ error: 'Unauthorized: You can only delete your own comments' });
+        }
+
+        // Proceed to delete the comment if the user is authorized
+        db.run(`DELETE FROM comments WHERE id = ?`, [commentId], function(err) {
+            if (err) {
+                console.error('Error deleting comment:', err);
+                return res.status(500).json({ error: 'Failed to delete comment' });
+            }
+            res.status(200).json({ message: 'Comment deleted successfully' });
+        });
+    });
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

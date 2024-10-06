@@ -98,6 +98,14 @@
                         commentDiv.innerHTML = `
                             <p><strong>${comment.username}</strong> commented: "${comment.comment}" - <em>${new Date(comment.created_at + 'Z').toLocaleString()}</em></p>
                         `;
+                        
+                        // Create a delete button for the comment
+                        const deleteCommentButton = document.createElement('button');
+                        deleteCommentButton.textContent = 'Delete Comment';
+                        deleteCommentButton.onclick = () => deleteComment(comment.id, postId); // Pass comment ID and post ID
+
+                        // Append the delete button to the comment div
+                        commentDiv.appendChild(deleteCommentButton);
                         commentsDiv.appendChild(commentDiv);
                     });
                 })
@@ -132,6 +140,25 @@
             })
             .catch(error => {
                 console.error('Error adding comment:', error);
+            });
+        }
+
+        function deleteComment(commentId, postId) {
+            fetch(`/posts/${postId}/comments/${commentId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to delete comment');
+                    });
+                }
+                // Reload comments after deletion
+                loadComments(postId);
+            })
+            .catch(error => {
+                alert(error.message); // Display the error message to the user
+                console.error('Error deleting comment:', error);
             });
         }
 
