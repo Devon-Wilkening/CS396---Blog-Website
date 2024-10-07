@@ -44,7 +44,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 )
             `);
-
+            // tags table
             db.run(`
                 CREATE TABLE IF NOT EXISTS tags (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -17,14 +17,14 @@
     </form>
 
     <script>
-        // Fetch the post data to prefill the form
-        const postId = window.location.pathname.split('/').pop(); // Get post ID from URL
+        // Fetch the pre-existing data in form for editing
+        const postId = window.location.pathname.split('/').pop(); // Get id for post from URL
         fetch(`/posts/${postId}`)
             .then(response => response.json())
             .then(post => {
                 document.getElementById('title').value = post.title;
                 document.getElementById('content').value = post.content;
-                document.getElementById('editPostForm').action = `/posts/${postId}/edit`; // Correct action URL
+                document.getElementById('editPostForm').action = `/posts/${postId}/edit`; 
             });
     </script>
 </body>

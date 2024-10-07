@@ -1,19 +1,20 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt'); // Used for password hashing 
 const db = require('./database'); // SQLite connection
 
+// Set up stuff for web server
 const app = express();
 const PORT = 3000;
 
-// Middleware for parsing form data
+// Middleware to handle any form data
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Session middleware
 app.use(session({
-    secret: 'mysecretkey',
+    secret: 'mysecretkey', // Can leave mysecretkey for the extent of this project. Would change for anything else
     resave: false,
     saveUninitialized: true
 }));
@@ -21,6 +22,7 @@ app.use(session({
 // Serve static files from 'public' directory
 app.use(express.static('public'));
 
+// Route to serve the home page (or deny if not logged in)
 app.get('/home', (req, res) => {
     if (!req.session.userId) {
         return res.status(403).send('You must be logged in to view this page.');
@@ -33,9 +35,11 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/login.html'); // Serve login.html as the default page
 });
 
+// Route to handle login with given email and pass credentials
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
 
+    // check to see if user exists
     db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
         if (err) {
             return res.status(500).send('Error logging in.');
@@ -49,7 +53,7 @@ app.post('/login', (req, res) => {
             const match = await bcrypt.compare(password, user.password);
 
             if (match) {
-                // Set the user session
+                // If match, set the user session and redirect to home page
                 req.session.userId = user.id;
                 req.session.username = user.username;
                 res.redirect('./home')
@@ -90,8 +94,9 @@ app.post('/register', async (req, res) => {
     }
 });
 
+// Route to handle logout
 app.post('/logout', (req, res) => {
-    req.session.destroy(err => {
+    req.session.destroy(err => { // If logging out, make sure to destroy session data
         if (err) {
             return res.status(500).send('Error logging out.');
         }
@@ -107,11 +112,12 @@ app.get('/create-post', (req, res) => {
     res.sendFile(__dirname + '/public/createPost.html'); // Serve createPost.html
 });
 
-// Create a new post
+// Route to create a new post
 app.post('/posts', (req, res) => {
     const { title, content, tag } = req.body;
     const userId = req.session.userId;
 
+    // Put title, content, etc. into posts table for that post
     db.run('INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)', 
     [title, content, userId], function (err) {
         if (err) {
@@ -120,6 +126,7 @@ app.post('/posts', (req, res) => {
         
         const postId = this.lastID;
 
+        // Check for tag
         if (tag) {
             // Insert tag into 'tags' table if it doesn't already exist
             db.run('INSERT OR IGNORE INTO tags (name) VALUES (?)', [tag], function(err) {
@@ -168,6 +175,7 @@ app.get('/posts', (req, res) => {
     });
 });
 
+// Route to fetch all the tags for a post
 app.get('/posts/:postId/tags', (req, res) => {
     const postId = req.params.postId;
     db.all(`
@@ -202,13 +210,10 @@ app.post('/posts/:postId/edit', (req, res) => {
     const { title, content } = req.body;
     const userId = req.session.userId;
 
-    console.log(`Editing post with ID: ${postId}`); // Debug log
-    console.log(`New title: ${title}, New content: ${content}`); // Debug log
-
+    // Update the post in the database with new title/content
     db.run('UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?', 
     [title, content, postId, userId], function(err) {
         if (err) {
-            console.error('Error updating post:', err); // Debug log
             return res.status(500).send('Error updating post.');
         }
         res.redirect('/home'); // Redirect back to home after editing
@@ -227,6 +232,7 @@ app.get('/posts/:postId', (req, res) => {
     });
 });
 
+// Route to delete a post
 app.delete('/posts/:postId', (req, res) => {
     const postId = req.params.postId;
     const userId = req.session.userId;
@@ -239,6 +245,7 @@ app.delete('/posts/:postId', (req, res) => {
     });
 });
 
+// Need a route to get all the comments for a post
 app.get('/posts/:postId/comments', (req, res) => {
     const postId = req.params.postId;
     
@@ -257,6 +264,7 @@ app.get('/posts/:postId/comments', (req, res) => {
     });
 });
 
+// Route for posting a comment under a post
 app.post('/posts/:postId/comments', (req, res) => {
     const postId = req.params.postId;
     const userId = req.session.userId; // Assuming user session contains the logged-in user ID
@@ -278,19 +286,19 @@ app.post('/posts/:postId/comments', (req, res) => {
     });
 });
 
-// PUT (edit) comment
+// Route to edit a comment
 app.put('/posts/:postId/comments/:commentId', (req, res) => {
     const commentId = req.params.commentId;
-    const userId = req.session.userId; // Get the logged-in user's ID from the session
-    const { comment } = req.body; // Get the new comment text from the request body
+    const userId = req.session.userId;
+    const comment = req.body.comment; 
 
-    // First, fetch the comment to check the user_id
+    // fetch the comment to check the user_id
     db.get(`SELECT user_id FROM comments WHERE id = ?`, [commentId], (err, existingComment) => {
         if (err) {
             console.error('Error fetching comment:', err);
             return res.status(500).json({ error: 'Failed to fetch comment' });
         }
-
+        // make sure comment exists to edit
         if (!existingComment) {
             return res.status(404).json({ error: 'Comment not found' });
         }
@@ -311,12 +319,12 @@ app.put('/posts/:postId/comments/:commentId', (req, res) => {
     });
 });
 
-// DELETE comment
+// Route to delete a comment
 app.delete('/posts/:postId/comments/:commentId', (req, res) => {
     const commentId = req.params.commentId;
     const userId = req.session.userId; // Get the logged-in user's ID from the session
 
-    // First, fetch the comment to check the user_id
+    // Process should be largely similar to editing a comment. Just make sure comment exists and belongs to user
     db.get(`SELECT user_id FROM comments WHERE id = ?`, [commentId], (err, comment) => {
         if (err) {
             console.error('Error fetching comment:', err);
@@ -327,12 +335,12 @@ app.delete('/posts/:postId/comments/:commentId', (req, res) => {
             return res.status(404).json({ error: 'Comment not found' });
         }
 
-        // Check if the logged-in user is the owner of the comment
+        // 
         if (comment.user_id !== userId) {
             return res.status(403).json({ error: 'Unauthorized: You can only delete your own comments' });
         }
 
-        // Proceed to delete the comment if the user is authorized
+        // 
         db.run(`DELETE FROM comments WHERE id = ?`, [commentId], function(err) {
             if (err) {
                 console.error('Error deleting comment:', err);
@@ -343,7 +351,7 @@ app.delete('/posts/:postId/comments/:commentId', (req, res) => {
     });
 });
 
-// GET posts by tag
+// Route to get any posts by a specific tag. Will be used for tag search
 app.get('/posts/tag/:tag', (req, res) => {
     const tag = req.params.tag;
 
