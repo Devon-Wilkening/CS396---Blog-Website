@@ -25,7 +25,7 @@ jobs:
       run: npm test
 
     - name: Build Docker image
-      run: docker build -t blog-website .
+      run: docker build -t devonwilkening/blog-server:latest .
 
     - name: Deploy to DockerHub (or local container registry)
       run: docker push devonwilkening/blog-server:latest
