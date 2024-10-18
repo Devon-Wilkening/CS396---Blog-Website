@@ -10,31 +10,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '16'
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    - name: Run tests
-      run: npm test
+      - name: Run tests
+        run: npm test
+
+      - name: Build Docker image
+        run: docker build -t devonwilkening/blog-server:latest .
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Save Docker image as an artifact
+        run: docker save devonwilkening/blog-server:latest | gzip > blog-server-image.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: blog-server-image
+          path: blog-server-image.tar.gz
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment: production # Approval required here
+
     steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: blog-server-image
+          path: .
 
-    - name: Build Docker image
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/blog-server:latest . 
+      - name: Load Docker image
+        run: gunzip -c blog-server-image.tar.gz | docker load
 
-    - name: Login to Docker Hub
-      run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-      
-    - name: Deploy to DockerHub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/blog-server:latest
+      - name: Deploy to DockerHub
+        run: docker push devonwilkening/blog-server:latest
