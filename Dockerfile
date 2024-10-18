@@ -11,6 +11,12 @@ RUN npm install
 # Rebuild native dependencies (like bcrypt)
 RUN npm rebuild bcrypt --build-from-source
 
+# Install curl
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Install Watchtower
+RUN curl -sSL https://github.com/containrrr/watchtower/releases/latest/download/watchtower_linux_amd64.tar.gz | tar xz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/watchtower
 
 # Copy the rest of the application
 COPY . .
