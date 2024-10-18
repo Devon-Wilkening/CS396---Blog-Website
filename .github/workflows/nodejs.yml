@@ -28,4 +28,4 @@ jobs:
       run: docker build -t blog-website .
 
     - name: Deploy to DockerHub (or local container registry)
-      run: docker push Devon-Wilkening/blog-website:latest
+      run: docker push devonwilkening/blog-server:latest
