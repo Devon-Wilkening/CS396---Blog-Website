@@ -3,7 +3,7 @@ version: '3.8'
 services:
   blog-app:
     image: devonwilkening/blog-server:latest
-    container_name: my-blog-app
+    container_name: blog-app
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Mount Docker socket
     ports:
@@ -15,4 +15,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Mount Docker socket
     restart: always  # Restart policy
-    command: --cleanup --interval 30 my-blog-app  # Configure Watchtower
+    command: --cleanup --interval 10 blog-app  # Configure Watchtower
