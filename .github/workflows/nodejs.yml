@@ -60,7 +60,7 @@ jobs:
 
       - name: Generate unique tag
         id: tag
-        run: echo "::set-output name=tag::$(date +%Y%m%d%H%M%S)-${{ github.sha }}"
+        run: echo "::set-output name=tag::$(date +%Y%m%d%H%M%S)"
 
       - name: Tag Docker image with unique tag
         run: docker tag devonwilkening/blog-server:latest devonwilkening/blog-server:${{ steps.tag.outputs.tag }}
