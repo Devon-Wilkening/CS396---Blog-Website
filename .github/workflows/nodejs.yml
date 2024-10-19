@@ -58,5 +58,14 @@ jobs:
       - name: Load Docker image
         run: gunzip -c blog-server-image.tar.gz | docker load
 
-      - name: Deploy to DockerHub
-        run: docker push devonwilkening/blog-server:latest
+      - name: Generate unique tag
+        id: tag
+        run: echo "::set-output name=tag::$(date +%Y%m%d%H%M%S)-${{ github.sha }}"
+
+      - name: Tag Docker image with unique tag
+        run: docker tag devonwilkening/blog-server:latest devonwilkening/blog-server:${{ steps.tag.outputs.tag }}
+
+      - name: Push Docker image with unique tag
+        run: |
+          docker push devonwilkening/blog-server:latest
+          docker push devonwilkening/blog-server:${{ steps.tag.outputs.tag }}
