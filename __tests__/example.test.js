@@ -22,7 +22,7 @@ describe('addComment function', () => {
     fetch.mockResolvedValueOnce({ ok: true });
 
     // Import the function to test
-    const { addComment } = require('../../path/to/your/file');
+    const { addComment } = require('public/app.js');
     await addComment(1);
 
     // Expect fetch to have been called with the correct parameters
@@ -39,7 +39,7 @@ describe('addComment function', () => {
     // Mock alert
     global.alert = jest.fn();
 
-    const { addComment } = require('../../path/to/your/file');
+    const { addComment } = require('public/app.js');
     await addComment(1);
 
     expect(alert).toHaveBeenCalledWith('Error adding comment');
@@ -47,7 +47,7 @@ describe('addComment function', () => {
 });
 
 // integration tests 
-const { fetchPosts } = require('../../path/to/your/file');
+const { fetchPosts } = require('public/app.js');
 
 // Mock the global fetch API
 global.fetch = jest.fn();
@@ -77,7 +77,7 @@ describe('fetchPosts function', () => {
 // __tests__/e2e/posts.test.js
 
 const request = require('supertest');
-const app = require('../../app'); // Your Express app
+const app = require('public/app.js'); // Your Express app
 
 describe('POST /posts', () => {
   it('should create a new post and redirect to home', async () => {
