@@ -47,7 +47,7 @@ describe('addComment function', () => {
 });
 
 // integration tests 
-const { fetchPosts } = require('/public/styling/app.js');
+const { fetchPosts } = require('../public/styling/app.js');
 
 // Mock the global fetch API
 global.fetch = jest.fn();
