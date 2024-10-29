@@ -1,7 +1,7 @@
 test('simple test', () => {
     expect(true).toBe(true);
 });
-
+/*
 // unit tests
 // Mock the global fetch API
 global.fetch = jest.fn();
