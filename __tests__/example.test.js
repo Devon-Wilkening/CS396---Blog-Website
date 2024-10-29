@@ -89,3 +89,4 @@ describe('POST /posts', () => {
     expect(response.headers.location).toBe('/home');
   });
 });
+*/
